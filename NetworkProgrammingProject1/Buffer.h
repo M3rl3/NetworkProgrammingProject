@@ -4,7 +4,9 @@
 
 class Buffer {
 public:
+	Buffer();
 	Buffer(size_t size);
+	~Buffer();
 
 	void WriteInt32LE(std::size_t index, int32_t value);
 	void WriteInt32LE(int32_t value);

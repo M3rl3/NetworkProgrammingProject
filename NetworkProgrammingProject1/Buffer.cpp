@@ -2,8 +2,16 @@
 
 #include <iostream>
 
+Buffer::Buffer() {
+
+}
+
 Buffer::Buffer(size_t size) : m_WriteIndex(0), m_ReadIndex(0) {
 	m_Buffer.resize(size);
+}
+
+Buffer::~Buffer() {
+
 }
 
 void Buffer::WriteInt32LE(std::size_t index, int32_t value) {
