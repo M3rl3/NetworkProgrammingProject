@@ -4,6 +4,7 @@ int main(int argc, char** argv) {
 	
 	SelectServer server;
 	int result = server.Initialize();
+
 	if (result != 0) {
 		return result;
 	}

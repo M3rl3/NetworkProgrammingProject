@@ -8,8 +8,11 @@
 #include <stdio.h>
 #include <conio.h>
 #include <iostream>
+#include <sstream>
 #include <vector>
 #include <chrono>
+
+#include "Buffer.h"
 
 #pragma comment(lib, "Ws2_32.lib")
 #pragma warning(disable : 4996)
@@ -33,11 +36,9 @@ class SelectServer {
 		fd_set activeSock;
 		fd_set socksReadyForReading;
 		unsigned int clientsConnected = 0;
+		std::string u_Name;
 		std::vector<ClientInfo> clients;
 	}g_ServerInfo;
-
-	WSADATA wsa;
-	int result;
 
 public:
 
@@ -47,6 +48,6 @@ public:
 	std::string Time();
 	int Initialize();
 	int I_O();
-	void HostName();
+	std::string HostName();
 	void ShutDown();
 };

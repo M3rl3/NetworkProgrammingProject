@@ -53,35 +53,76 @@ int Client::I_O() {
 	Buffer buf(bufflen);
 
 	buf.WriteInt32LE(0, 100);*/
+
+	/*DWORD NonBlock = 1;
+	result = ioctlsocket(g_ClientInfo.sock, FIONBIO, &NonBlock);
+	if (result == SOCKET_ERROR) {
+		printf("ioctlsocket to failed with error: %d\n", WSAGetLastError());
+		closesocket(g_ClientInfo.sock);
+		freeaddrinfo(g_ClientInfo.info);
+		WSACleanup();
+		return 1;
+	}*/
+
+	const int recvBufLen = 256;
+	char recvBuf[recvBufLen];
 	
+
 	const int buflen = 256;
 	char buf[buflen];
 
+	std::string uName;
 	std::string input;
+	char ch = '1';
+
+	std::ostringstream ss;
 	
+	std::cout << "\nEnter username: ";
+
+	getline(std::cin, uName);
+	Buffer myBuf(uName.length());
+	myBuf.WriteString(uName);
+
 	std::cout << "Sending message to server...\n";
 	do {
 		std::cout << "> ";
 		getline(std::cin, input);
-
+		Buffer myBuf(input.length());
+		myBuf.WriteString(input);
+		/*if (_kbhit()) {
+			ch = _getch();
+			input += ch;
+		}*/
+		ss << uName << " : " << input << " | " << Time();
+		std::string stream = ss.str();
+		//Exits the loop if input buffer size is 0
 		if (input.size() > 0) {
+	
 			int sendResult = send(g_ClientInfo.sock, input.c_str(), input.size() + 1, 0);
 			if (sendResult != SOCKET_ERROR)
 			{
+				//Reset the buffer
 				ZeroMemory(buf, buflen);
 				int bytesReceived = recv(g_ClientInfo.sock, buf, buflen, 0);
 				if (bytesReceived > 0)
 				{
-					std::cout << "SERVER> " << std::string(buf, 0, bytesReceived) << std::endl;
+					std::cout << std::string(buf, 0, bytesReceived) << std::endl;
 				}
 			}
 			else {
 				std::cout << "\nExit with code " << WSAGetLastError() << "." << std::endl;
 			}
 		}
-	} while (input.size() > 0);
+	} while (ch != '0');
 
 	return 0;
+}
+
+std::string Client::Time() {
+	auto time = std::chrono::system_clock::now();
+	std::time_t con = std::chrono::system_clock::to_time_t(time);
+	std::string conTime = std::ctime(&con);
+	return conTime;
 }
 
 void Client::ShutDown() {

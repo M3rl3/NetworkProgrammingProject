@@ -10,10 +10,12 @@
 #include <iostream>
 #include <chrono>
 #include <string>
+#include <sstream>
 
 #include "Buffer.h"
 
 #pragma comment(lib, "Ws2_32.lib")
+#pragma warning(disable : 4996)
 
 #define LOCAL_HOST "127.0.0.1"
 #define DEFAULT_PORT "54673"
@@ -32,6 +34,7 @@ class Client {
 public:
 	int Initialize();
 	int I_O();
+	std::string Time();
 	void ShutDown();
 	
 };
