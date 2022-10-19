@@ -80,15 +80,15 @@ int Client::I_O() {
 	std::cout << "\nEnter username: ";
 
 	getline(std::cin, uName);
-	Buffer myBuf(uName.length());
-	myBuf.WriteString(uName);
+	//Buffer myBuf(uName.length());
+	//myBuf.WriteString(uName);
 
 	std::cout << "Sending message to server...\n";
 	do {
 		std::cout << "> ";
-		//getline(std::cin, input);
-		ch = _getch();
-		input += ch;
+		getline(std::cin, input);
+		/*ch = _getch();
+		input += ch;*/
 		
 		/*fflush(stdin);
 		getchar();*/
