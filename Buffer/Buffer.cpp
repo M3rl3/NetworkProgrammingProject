@@ -172,3 +172,11 @@ std::string Buffer::ReadString(std::string value) {
 	}
 	return value;
 }
+
+std::string Buffer::ReadString() {
+	std::string value = m_StrBuffer;
+	for (int i = 0; i < value.length(); i++) {
+		value[i] = ((unsigned char)value[i]) >> 1;
+	}
+	return value;
+}

@@ -45,9 +45,17 @@ Buffer Serialize() {
 void main(int argc, char** argv) {
 
 	Buffer buf(50000);
+	
+	buf.WriteInt16LE(-123);		//signed short serialization
+	buf.WriteInt32LE(-1234);	//signed int serialization
+	
+	std::cout << buf.ReadInt16LE();
+	std::cout << "\n" << buf.ReadInt32LE();
 
-	buf.WriteUInt16LE(456);
-	buf.WriteInt32LE(1000);
-	std::cout << buf.ReadUInt16LE();
-	std::cout << buf.ReadInt32LE();
+	std::string myString = "Hello!";
+
+	Buffer buf1(myString.length());
+	buf1.WriteString(myString);	//string serialization
+	
+	std::cout << "\n" << buf1.ReadString();
 }

@@ -86,13 +86,16 @@ int Client::I_O() {
 	std::cout << "Sending message to server...\n";
 	do {
 		std::cout << "> ";
-		getline(std::cin, input);
+		//getline(std::cin, input);
+		
+		ch = getchar();
+		input += ch;
+		/*fflush(stdin);
+		getchar();*/
+
 		Buffer myBuf(input.length());
 		myBuf.WriteString(input);
-		/*if (_kbhit()) {
-			ch = _getch();
-			input += ch;
-		}*/
+
 		ss << uName << " : " << input << " | " << Time();
 		std::string stream = ss.str();
 		//Exits the loop if input buffer size is 0

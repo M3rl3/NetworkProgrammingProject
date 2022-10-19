@@ -56,5 +56,5 @@ public:
 
 	std::string ReadString(std::size_t index);
 	std::string ReadString(std::string value);
-
+	std::string ReadString();
 };
