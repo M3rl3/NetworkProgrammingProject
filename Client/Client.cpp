@@ -1,7 +1,58 @@
 #include "Client.h"
 
+struct Header {
+	uint32_t packetLength;
+	uint32_t messageLength;
+	uint32_t roomNameLength;
+	uint32_t usrNameLength;
+};
+
+struct Content {
+	std::string roomName;
+	std::string message;
+	std::string usrName;
+};
+
+struct Packet {
+	Header header;
+	Content content;
+};
+
+std::vector<uint8_t> CreatePacket(std::string usrName, std::string roomName, std::string message) {
+	Packet pkt;
+	pkt.content.roomName = roomName;
+	pkt.content.message = message;
+	pkt.content.usrName = usrName;
+
+	pkt.header.roomNameLength = sizeof(pkt.content.roomName);
+	pkt.header.messageLength = sizeof(pkt.content.message);
+	pkt.header.usrNameLength = sizeof(pkt.content.usrName);
+
+	pkt.header.packetLength = 
+		sizeof(pkt.header.roomNameLength) + sizeof(pkt.header.messageLength) +
+		sizeof(pkt.header.usrNameLength) + pkt.header.roomNameLength + 
+		pkt.header.messageLength + pkt.header.usrNameLength; 
+
+	Buffer buffer;
+
+	buffer.WriteUInt32LE(pkt.header.packetLength);
+	buffer.WriteUInt32LE(pkt.header.usrNameLength);
+	buffer.WriteUInt32LE(pkt.header.roomNameLength);
+	buffer.WriteUInt32LE(pkt.header.messageLength);
+
+	buffer.WriteString(pkt.content.usrName);
+	buffer.WriteString(pkt.content.roomName);
+	buffer.WriteString(pkt.content.message);
+
+
+	return buffer.m_Buffer;
+}
+
 int Client::Initialize() {
-	
+
+	WSADATA wsa;
+	int result;
+
 	std::cout << "Startup running...\n";
 	result = WSAStartup(MAKEWORD(2, 2), &wsa);
 
@@ -54,26 +105,36 @@ int Client::I_O() {
 	char buf[buflen];
 
 	std::string uName;
+	std::string roomName;
 	
 	std::cout << "\nEnter username: ";
-
 	getline(std::cin, uName);
-	
+
+	/*std::cout << "\nRoomAlpha\nRoomBeta";
+
+	std::cout << "\nSelect the room you wanna join: ";
+	getline(std::cin, roomName);*/
+
 	bool dataSent = true;
 
 	std::cout << "Sending message to server...\n";
+
 	do {
 		std::string input;
 		std::ostringstream ss;
-
+		
 		std::cout << "> ";
 		getline(std::cin, input);
+		
 		/*ch = _getch();
 		input += ch;*/
 		
 		/*fflush(stdin);
 		getchar();*/
 
+		//std::vector<uint8_t> buffPacket;
+		//buffPacket = CreatePacket(uName, roomName, input);
+		
 		ss << uName << " : " << input << " | " << Time();
 		std::string stream = ss.str();
 
@@ -84,9 +145,10 @@ int Client::I_O() {
 		if (input.size() > 0) {
 	
 			int sendResult = send(g_ClientInfo.sock, stream.c_str(), stream.size() + 1, 0);
+			//int sendResult = send(g_ClientInfo.sock, (const char*)&buffPacket[0], buffPacket.size(), 0);
 			if (sendResult != SOCKET_ERROR)
 			{
-				//Reset the buffer
+				//Reset the buffer to receive on it
 				ZeroMemory(buf, buflen);
 				int bytesReceived = recv(g_ClientInfo.sock, buf, buflen, 0);
 				if (bytesReceived > 0)

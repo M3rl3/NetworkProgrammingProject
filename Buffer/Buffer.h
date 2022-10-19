@@ -5,9 +5,6 @@
 
 class Buffer {
 
-	std::vector<uint8_t> m_Buffer;
-	std::string m_StrBuffer = "";
-
 	int m_WriteIndex;
 	int m_ReadIndex;
 
@@ -15,6 +12,9 @@ public:
 	Buffer();
 	Buffer(size_t size);
 	~Buffer();
+
+	std::vector<uint8_t> m_Buffer;
+	std::string m_StrBuffer = "";
 
 	inline void ResetBufferIndex() {
 		m_Buffer.clear();
@@ -25,9 +25,11 @@ public:
 	//Unsigned int 
 	void WriteUInt32LE(std::size_t index, uint32_t value);
 	void WriteUInt32LE(uint32_t value);
+	uint8_t WriteUInt32LE(uint32_t value, int temp);
 
 	uint32_t ReadUInt32LE(std::size_t index);
 	uint32_t ReadUInt32LE();
+	uint32_t ReadUInt32LE(uint32_t value);
 
 	//Signed int
 	void WriteInt32LE(std::size_t index, int32_t value);
@@ -53,6 +55,7 @@ public:
 	//String
 	void WriteString(std::size_t index, std::string value);
 	void WriteString(std::string value);
+	std::string WriteString(std::string value, int temp);
 
 	std::string ReadString(std::size_t index);
 	std::string ReadString(std::string value);

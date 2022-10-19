@@ -142,14 +142,17 @@ int SelectServer::I_O() {
 
 				//Receive buffer
 				int bytesReceived = recv(client.cSock, buf, buflen, 0);
+				
 				buffer = buf;
-
+				//std::cout << "\nthis is the string without serial: " << buffer;
+				
 				//Deserialize the buffer
 				Buffer myBuf(buffer.length());
 				myBuf.ReadString(buffer);
 
 				std::cout << "\n> " << buffer;
 				
+				//Client gets disconnected if no bytes are received from it
 				if (bytesReceived <= 0) {
 					client.connected = false;
 					closesocket(client.cSock);

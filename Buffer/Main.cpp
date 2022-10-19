@@ -54,8 +54,18 @@ void main(int argc, char** argv) {
 
 	std::string myString = "Hello!";
 
-	Buffer buf1(myString.length());
-	buf1.WriteString(myString);	//string serialization
+	buf.WriteString(myString);	//string serialization
+	std::cout << "\n" << buf.ReadString();
+
+	//Over the network
 	
-	std::cout << "\n" << buf1.ReadString();
+	Buffer buf2(4);
+	std::string man = buf2.WriteString("Hey!", 0);
+	std::cout << "\n" << man;
+	std::cout << "\n" << buf2.ReadString(man);
+
+	Buffer buf3(500);
+	uint32_t myInt32 = buf3.WriteUInt32LE(69420, 0); //serialize an int32 passed in
+	std::cout << "\n" << myInt32;
+	std::cout << "\n" << buf3.ReadUInt32LE(myInt32); //deserialize an int32 passed in
 }

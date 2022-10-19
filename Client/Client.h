@@ -28,13 +28,9 @@ class Client {
 		SOCKET sock = INVALID_SOCKET;
 	}g_ClientInfo;
 
-	WSADATA wsa;
-	int result;
-
 public:
 	int Initialize();
 	int I_O();
 	std::string Time();
 	void ShutDown();
-	
 };

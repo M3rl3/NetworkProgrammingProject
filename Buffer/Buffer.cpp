@@ -31,6 +31,16 @@ void Buffer::WriteUInt32LE(uint32_t value)
 	m_Buffer[m_WriteIndex++] = value >> 24;
 }
 
+uint8_t Buffer::WriteUInt32LE(uint32_t value, int temp)
+{
+	m_Buffer[m_WriteIndex++] = value;
+	m_Buffer[m_WriteIndex++] = value >> 8;
+	m_Buffer[m_WriteIndex++] = value >> 16;
+	m_Buffer[m_WriteIndex++] = value >> 24;
+	
+	return m_Buffer[m_WriteIndex];
+}
+
 uint32_t Buffer::ReadUInt32LE(std::size_t index) {
 	uint32_t value = m_Buffer[index];
 	value += m_Buffer[index + 1] << 8;
@@ -42,6 +52,15 @@ uint32_t Buffer::ReadUInt32LE(std::size_t index) {
 uint32_t Buffer::ReadUInt32LE()
 {
 	uint32_t value = m_Buffer[m_ReadIndex++];
+	value |= m_Buffer[m_ReadIndex++] << 8;
+	value |= m_Buffer[m_ReadIndex++] << 16;
+	value |= m_Buffer[m_ReadIndex++] << 24;
+	return value;
+}
+
+uint32_t Buffer::ReadUInt32LE(uint32_t value)
+{
+	value = m_Buffer[m_ReadIndex++];
 	value |= m_Buffer[m_ReadIndex++] << 8;
 	value |= m_Buffer[m_ReadIndex++] << 16;
 	value |= m_Buffer[m_ReadIndex++] << 24;
@@ -146,16 +165,24 @@ int16_t Buffer::ReadInt16LE() {
 //String
 void Buffer::WriteString(std::size_t index, std::string value) {
 	for (int i = 0; i < index; i++) {
-		value[i] = ((unsigned char)value[i]) << 1;
+		m_Buffer[i] = ((unsigned char)value[i]) << 1;
 	}
-	m_StrBuffer = value;
+	//m_StrBuffer = value;
 }
 
 void Buffer::WriteString(std::string value) {
 	for (int i = 0; i < value.length(); i++) {
+		m_Buffer[i] = ((unsigned char)value[i]) << 1;
+	}
+	m_StrBuffer = value;
+}
+
+std::string Buffer::WriteString(std::string value, int temp) {
+	for (int i = 0; i < value.length(); i++) {
 		value[i] = ((unsigned char)value[i]) << 1;
 	}
 	m_StrBuffer = value;
+	return value;
 }
 
 std::string Buffer::ReadString(std::size_t index) {
