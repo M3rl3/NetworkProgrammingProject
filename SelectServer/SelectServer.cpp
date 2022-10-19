@@ -148,7 +148,7 @@ int SelectServer::I_O() {
 				Buffer myBuf(buffer.length());
 				myBuf.ReadString(buffer);
 
-				std::cout << "\n> " << buffer << " | " << Time();
+				std::cout << "\n> " << buffer;
 				
 				if (bytesReceived <= 0) {
 					client.connected = false;
@@ -168,6 +168,7 @@ int SelectServer::I_O() {
 							if (sendResult == SOCKET_ERROR) {
 								continue;
 							}
+							ZeroMemory(buf, buflen);
 						}	
 					}	
 				}
