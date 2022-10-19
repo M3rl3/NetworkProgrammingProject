@@ -66,7 +66,6 @@ int Client::I_O() {
 
 	const int recvBufLen = 256;
 	char recvBuf[recvBufLen];
-	
 
 	const int buflen = 256;
 	char buf[buflen];
@@ -116,7 +115,7 @@ int Client::I_O() {
 				std::cout << "\nExit with code " << WSAGetLastError() << "." << std::endl;
 			}
 		}
-	} while (ch != '0');
+	} while (input.size() > 0);
 
 	return 0;
 }

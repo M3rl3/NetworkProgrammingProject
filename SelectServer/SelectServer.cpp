@@ -125,10 +125,12 @@ int SelectServer::I_O() {
 		}
 
 		std::string buffer;
-		std::string buffer0;
+
 		//Inbound message
 		for (int i = 0; i < g_ServerInfo.clients.size(); i++) {
+			
 			ClientInfo client = g_ServerInfo.clients[i];
+			
 			if (client.connected == false) {
 				continue;
 			}
@@ -138,66 +140,39 @@ int SelectServer::I_O() {
 				char buf[buflen];
 				ZeroMemory(buf, buflen);
 
+				//Receive buffer
 				int bytesReceived = recv(client.cSock, buf, buflen, 0);
 				buffer = buf;
+
+				//Deserialize the buffer
 				Buffer myBuf(buffer.length());
 				myBuf.ReadString(buffer);
-				buffer0 = buffer;
-				std::cout << "\n> " << buffer;
+
+				std::cout << "\n> " << buffer << " | " << Time();
 				
 				if (bytesReceived <= 0) {
 					client.connected = false;
 					closesocket(client.cSock);
 					FD_CLR(client.cSock, &g_ServerInfo.socksReadyForReading);
 					std::cout << "Client disconnected...\n";
-					break;	
+					break;
 				}
 
-				//send message to all clients
+				//Send message to all clients except the one it came from
 				else {
 					for (int i = 0; i < g_ServerInfo.clients.size(); i++) {
-						//ClientInfo client = g_ServerInfo.clients[i];
+				
 						SOCKET sock = g_ServerInfo.clients[i].cSock;
 						if (sock != client.cSock) {
 							int sendResult = send(sock, buf, buflen, 0);
 							if (sendResult == SOCKET_ERROR) {
-								break;
+								continue;
 							}
-						}
-						
+						}	
 					}	
 				}
 			}
 		}
-		/*for (int i = 0; i < g_ServerInfo.clients.size(); i++) {
-			ClientInfo client = g_ServerInfo.clients[i];
-			SOCKET sock = g_ServerInfo.clients[i].cSock;
-
-			int sendResult = send(sock, buf, buflen, 0);
-			if (sendResult == SOCKET_ERROR) {
-				break;
-			}
-		}*/
-		/*for (int i = 0; i < g_ServerInfo.socksReadyForReading.fd_count; i++)
-		{
-			SOCKET outSock = g_ServerInfo.socksReadyForReading.fd_array[i];
-			if (outSock != g_ServerInfo.listenSock)
-			{
-				send(outSock, buffer0.c_str(), buffer0.size() + 1, 0);
-			}
-		}*/
-		/*for (int i = 0; i < g_ServerInfo.socksReadyForReading.fd_count; i++)
-		{
-			SOCKET outSock = g_ServerInfo.socksReadyForReading.fd_array[i];
-			if (outSock != g_ServerInfo.listenSock)
-			{
-				std::ostringstream ss;
-				ss << "SOCKET #" << outSock << ": " << buffer << "\r\n";
-				std::string strOut = ss.str();
-
-				send(outSock, strOut.c_str(), strOut.size() + 1, 0);
-			}
-		}*/
 	}
 	return 0;
 }
