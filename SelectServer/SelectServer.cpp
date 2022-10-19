@@ -86,7 +86,7 @@ int SelectServer::I_O() {
 		FD_ZERO(&g_ServerInfo.socksReadyForReading);
 		FD_SET(g_ServerInfo.listenSock, &g_ServerInfo.socksReadyForReading);
 		
-		//fd_set temp = g_ServerInfo.socksReadyForReading;
+		fd_set copy = g_ServerInfo.socksReadyForReading;
 
 
 		for (int i = 0; i < g_ServerInfo.clients.size(); i++) {
@@ -103,12 +103,10 @@ int SelectServer::I_O() {
 			WSACleanup();
 			return 1;
 		}
-
 		
 		//Inbound connection
 		if (FD_ISSET(g_ServerInfo.listenSock, &g_ServerInfo.socksReadyForReading)) {
-
-			
+	
 			SOCKET clientSocket = accept(g_ServerInfo.listenSock, nullptr, nullptr);
 			if (clientSocket == INVALID_SOCKET) {
 				std::cout << "\nExit with code " << WSAGetLastError() << "." << std::endl;
@@ -117,7 +115,7 @@ int SelectServer::I_O() {
 				ClientInfo client;
 				client.connected = true;
 				client.cSock = clientSocket;
-				FD_SET(client.cSock, &g_ServerInfo.socksReadyForReading);
+				//FD_SET(client.cSock, &g_ServerInfo.socksReadyForReading);
 				
 				std::string welMessage = "Welcome to the chat server!";
 				send(client.cSock, welMessage.c_str(), welMessage.size() + 1, 0);
@@ -125,17 +123,20 @@ int SelectServer::I_O() {
 				g_ServerInfo.clients.push_back(client);
 			}
 		}
-		
-		const int buflen = 256;
-		char buf[buflen];
-		ZeroMemory(buf, buflen);
 
 		std::string buffer;
 		//Inbound message
 		for (int i = 0; i < g_ServerInfo.clients.size(); i++) {
 			ClientInfo client = g_ServerInfo.clients[i];
+			if (client.connected == false) {
+				continue;
+			}
+
 			if (FD_ISSET(client.cSock, &g_ServerInfo.socksReadyForReading)) {
-				
+				const int buflen = 256;
+				char buf[buflen];
+				ZeroMemory(buf, buflen);
+
 				int bytesReceived = recv(client.cSock, buf, buflen, 0);
 				buffer = buf;
 				Buffer myBuf(buffer.length());
@@ -143,21 +144,23 @@ int SelectServer::I_O() {
 				
 				std::cout << "\n> " << buffer;
 				
-				if (bytesReceived == 0) {
+				if (bytesReceived <= 0) {
 					client.connected = false;
 					closesocket(client.cSock);
 					FD_CLR(client.cSock, &g_ServerInfo.socksReadyForReading);
 					std::cout << "Client disconnected...\n";
 					break;	
 				}
-				//buffer = buf;
+				else {
+					for (int i = 0; i < g_ServerInfo.clients.size(); i++) {
+						SOCKET sock = g_ServerInfo.clients[i].cSock;
+						int sendResult = send(sock, buf, buflen, 0);
+						if (sendResult == SOCKET_ERROR) {
+							break;
+						}
+					}
+				}	
 			}
-		}
-		//Outbound message
-		for (int i = 0; i < g_ServerInfo.clients.size(); i++) {
-			
-			ClientInfo client = g_ServerInfo.clients[i];
-			send(client.cSock, buf, buflen, 0);
 		}
 	}
 	return 0;

@@ -87,9 +87,9 @@ int Client::I_O() {
 	do {
 		std::cout << "> ";
 		//getline(std::cin, input);
-		
-		ch = getchar();
+		ch = _getch();
 		input += ch;
+		
 		/*fflush(stdin);
 		getchar();*/
 
