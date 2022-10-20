@@ -11,6 +11,7 @@
 #include <chrono>
 #include <string>
 #include <sstream>
+#include <future>
 
 #include "Buffer.h"
 

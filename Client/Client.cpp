@@ -31,7 +31,7 @@ std::vector<uint8_t> CreatePacket(std::string usrName, std::string roomName, std
 	pkt.header.packetLength = 
 		sizeof(pkt.header.roomNameLength) + sizeof(pkt.header.messageLength) +
 		sizeof(pkt.header.usrNameLength) + pkt.header.roomNameLength + 
-		pkt.header.messageLength + pkt.header.usrNameLength; 
+		pkt.header.messageLength + pkt.header.usrNameLength;
 
 	Buffer buffer;
 
@@ -43,7 +43,6 @@ std::vector<uint8_t> CreatePacket(std::string usrName, std::string roomName, std
 	buffer.WriteString(pkt.content.usrName);
 	buffer.WriteString(pkt.content.roomName);
 	buffer.WriteString(pkt.content.message);
-
 
 	return buffer.m_Buffer;
 }
@@ -94,6 +93,16 @@ int Client::Initialize() {
 		return 1;
 	}
 
+	DWORD NonBlock = 1;
+	result = ioctlsocket(g_ClientInfo.sock, FIONBIO, &NonBlock);
+	if (result == SOCKET_ERROR) {
+		std::cout << "\nExit with code " << WSAGetLastError() << "." << std::endl;
+		freeaddrinfo(g_ClientInfo.info);
+		closesocket(g_ClientInfo.sock);
+		WSACleanup();
+		return 1;
+	}
+
 	std::cout << "Connection established...\n";
 
 	return 0;
@@ -118,51 +127,55 @@ int Client::I_O() {
 	bool dataSent = true;
 
 	std::cout << "Sending message to server...\n";
+	std::string message = "";
 
 	do {
+	
 		std::string input;
-		std::ostringstream ss;
-		
+
 		std::cout << "> ";
-		getline(std::cin, input);
-		
-		/*ch = _getch();
-		input += ch;*/
-		
-		/*fflush(stdin);
-		getchar();*/
+		while (true) {
+			if (_kbhit()) {
+
+				int key = _getch();
+				input += (char)key;
+				if (key == 13) {
+					int sendResult = send(g_ClientInfo.sock, input.c_str(), input.size() + 1, 0);
+					if (sendResult == SOCKET_ERROR) {
+						break;
+					}
+					input = "";
+				}
+				else if (key == 27) {
+					dataSent = false;
+				}
+				else if (key == 8) {
+					input.pop_back();
+				}
+				else {
+					std::cout << input << "\n";
+				}
+			}
+			
+			ZeroMemory(buf, buflen);
+			int bytesReceived = recv(g_ClientInfo.sock, buf, buflen, 0);
+			if (bytesReceived > 0)
+			{
+				std::cout << std::string(buf, 0, bytesReceived) << std::endl;
+			}
+		}
 
 		//std::vector<uint8_t> buffPacket;
 		//buffPacket = CreatePacket(uName, roomName, input);
 		
-		ss << uName << " : " << input << " | " << Time();
-		std::string stream = ss.str();
+		//ss << uName << " : " << input << " | " << Time();
+		
+		
+		//int sendResult = send(g_ClientInfo.sock, (const char*)&buffPacket[0], buffPacket.size(), 0);
 
-		Buffer myBuf(stream.length());
-		myBuf.WriteString(stream);
-
-		//Exits the loop if input buffer size is 0
-		if (input.size() > 0) {
-	
-			int sendResult = send(g_ClientInfo.sock, stream.c_str(), stream.size() + 1, 0);
-			//int sendResult = send(g_ClientInfo.sock, (const char*)&buffPacket[0], buffPacket.size(), 0);
-			if (sendResult != SOCKET_ERROR)
-			{
-				//Reset the buffer to receive on it
-				ZeroMemory(buf, buflen);
-				int bytesReceived = recv(g_ClientInfo.sock, buf, buflen, 0);
-				if (bytesReceived > 0)
-				{
-					std::cout << std::string(buf, 0, bytesReceived) << std::endl;
-				}
-			}
-			else {
-				std::cout << "\nExit with code " << WSAGetLastError() << "." << std::endl;
-			}
-		}
-		else {
-			dataSent = false;
-		}
+		//Reset the buffer to receive on it
+		
+		
 	} while (dataSent);
 
 	return 0;

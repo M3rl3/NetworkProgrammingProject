@@ -68,6 +68,7 @@ int SelectServer::Initialize() {
 		WSACleanup();
 		return 1;
 	}
+
 	std::cout << "Accepting connections...\n";
 	
 	return 0;
@@ -81,27 +82,24 @@ int SelectServer::I_O() {
 	t_val.tv_usec = 500 * 1000;
 
 	bool executing = true;
+
 	while (executing) {
 		
 		FD_ZERO(&g_ServerInfo.socksReadyForReading);
 		FD_SET(g_ServerInfo.listenSock, &g_ServerInfo.socksReadyForReading);
 		
-		fd_set copy = g_ServerInfo.socksReadyForReading;
-
-
 		for (int i = 0; i < g_ServerInfo.clients.size(); i++) {
 			ClientInfo& client = g_ServerInfo.clients[i];
-			if (client.connected) FD_SET(client.cSock, &g_ServerInfo.socksReadyForReading);
+			if (client.connected) {
+				FD_SET(client.cSock, &g_ServerInfo.socksReadyForReading);
+			}	
 		}
 
 		//std::cout << "Calling select...\n";
 		selResult = select(0, &g_ServerInfo.socksReadyForReading, nullptr, nullptr, &t_val);
 		if (selResult == SOCKET_ERROR) {
-			std::cout << "\nSelect call exit with code " << WSAGetLastError() << "." << std::endl;
-			freeaddrinfo(g_ServerInfo.info);
-			closesocket(g_ServerInfo.listenSock);
-			WSACleanup();
-			return 1;
+			FD_CLR(g_ServerInfo.clientSock, &g_ServerInfo.socksReadyForReading);
+			FD_SET(g_ServerInfo.listenSock, &g_ServerInfo.socksReadyForReading);
 		}
 		
 		//Inbound connection
