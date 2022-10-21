@@ -116,13 +116,18 @@ int SelectServer::I_O() {
 				FD_SET(client.cSock, &g_ServerInfo.socksReadyForReading);
 				
 				std::string welMessage = "Welcome to the chat server!";
+
+				//Serialize the welcome message too!
+				Buffer buffer(welMessage.length());
+				welMessage = buffer.WriteString(welMessage, 0);
+
 				send(client.cSock, welMessage.c_str(), welMessage.size() + 1, 0);
 
 				g_ServerInfo.clients.push_back(client);
 			}
 		}
 
-		std::string buffer;
+		
 
 		//Inbound message
 		for (int i = 0; i < g_ServerInfo.clients.size(); i++) {
@@ -141,14 +146,8 @@ int SelectServer::I_O() {
 				//Receive buffer
 				int bytesReceived = recv(client.cSock, buf, buflen, 0);
 				
-				buffer = buf;
-				//std::cout << "\nthis is the string without serial: " << buffer;
-				
-				//Deserialize the buffer
-				Buffer myBuf(buffer.length());
-				myBuf.ReadString(buffer);
-
-				std::cout << "\n> " << buffer;
+				//Buffer before being deserialized.
+				//std::cout << "\n" << buf;
 				
 				//Client gets disconnected if no bytes are received from it
 				if (bytesReceived <= 0) {

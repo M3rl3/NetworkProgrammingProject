@@ -114,67 +114,60 @@ int Client::I_O() {
 	char buf[buflen];
 
 	std::string uName;
-	std::string roomName;
 	
 	std::cout << "\nEnter username: ";
 	getline(std::cin, uName);
 
-	/*std::cout << "\nRoomAlpha\nRoomBeta";
-
-	std::cout << "\nSelect the room you wanna join: ";
-	getline(std::cin, roomName);*/
-
 	bool dataSent = true;
 
 	std::cout << "Sending message to server...\n";
-	std::string message = "";
 
 	do {
-	
 		std::string input;
 
 		std::cout << "> ";
 		while (true) {
-			if (_kbhit()) {
+			if (kbhit()) {
 
-				int key = _getch();
-				input += (char)key;
+				int key = getch();
+
 				if (key == 13) {
-					int sendResult = send(g_ClientInfo.sock, input.c_str(), input.size() + 1, 0);
+					std::ostringstream ss;
+					ss << uName << " : " << input;
+					std::string message = ss.str();
+					
+					Buffer buffer;
+					message = buffer.WriteString(message, 0);
+
+					int sendResult = send(g_ClientInfo.sock, message.c_str(), message.size() + 1, 0);
 					if (sendResult == SOCKET_ERROR) {
 						break;
 					}
 					input = "";
 				}
-				else if (key == 27) {
-					dataSent = false;
-				}
 				else if (key == 8) {
 					input.pop_back();
 				}
+				else if (key == 27) {
+					dataSent = false;
+				}
 				else {
-					std::cout << input << "\n";
+					input += (char)key;
+					std::cout << input << std::endl;
 				}
 			}
 			
 			ZeroMemory(buf, buflen);
 			int bytesReceived = recv(g_ClientInfo.sock, buf, buflen, 0);
+			
 			if (bytesReceived > 0)
 			{
-				std::cout << std::string(buf, 0, bytesReceived) << std::endl;
+				std::string recvBuf = buf;
+				Buffer myBuf(recvBuf.length());
+				recvBuf = myBuf.ReadString(recvBuf);
+				std::cout << "> " << recvBuf << std::endl;
 			}
 		}
-
-		//std::vector<uint8_t> buffPacket;
-		//buffPacket = CreatePacket(uName, roomName, input);
-		
-		//ss << uName << " : " << input << " | " << Time();
-		
-		
-		//int sendResult = send(g_ClientInfo.sock, (const char*)&buffPacket[0], buffPacket.size(), 0);
-
-		//Reset the buffer to receive on it
-		
 		
 	} while (dataSent);
 
