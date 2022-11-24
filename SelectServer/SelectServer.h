@@ -19,6 +19,7 @@
 
 #define LOCAL_HOST "127.0.0.1"
 #define DEFAULT_PORT "54673"
+#define AUTH_PORT "3306"
 
 class SelectServer {
 	
@@ -27,11 +28,18 @@ class SelectServer {
 		std::string name;
 		bool connected;
 	};
+	
+	struct AuthServerInfo {
+		SOCKET authSock;
+		std::string name;
+		bool connected;
+	};
 
 	struct ServerInfo {
 		struct addrinfo* info = NULL;
 		struct addrinfo hints;
 		SOCKET listenSock = INVALID_SOCKET;
+		SOCKET authSock = INVALID_SOCKET;
 		SOCKET clientSock = INVALID_SOCKET;
 		fd_set activeSock;
 		fd_set socksReadyForReading;

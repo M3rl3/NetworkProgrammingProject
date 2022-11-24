@@ -13,7 +13,7 @@ int SelectServer::Initialize() {
 	WSADATA wsa;
 	int result;
 
-	std::cout << "Startup running...\n";
+	std::cout << "Startup running . . . ";
 	result = WSAStartup(MAKEWORD(2, 2), &wsa);
 
 	FD_ZERO(&g_ServerInfo.socksReadyForReading);
@@ -23,6 +23,10 @@ int SelectServer::Initialize() {
 		std::cout << "\nExit with code " << result << "." << std::endl;
 		return 1;
 	}
+	else {
+		printf("Success!\n");
+	}
+
 
 	ZeroMemory(&g_ServerInfo.hints, sizeof(g_ServerInfo.hints));
 	
@@ -31,15 +35,67 @@ int SelectServer::Initialize() {
 	g_ServerInfo.hints.ai_protocol = IPPROTO_TCP;
 	g_ServerInfo.hints.ai_flags = AI_PASSIVE;
 
-	result = getaddrinfo(LOCAL_HOST, DEFAULT_PORT, &g_ServerInfo.hints, &g_ServerInfo.info);
-	std::cout << "Getting address info...\n";
+	result = getaddrinfo(LOCAL_HOST, AUTH_PORT, &g_ServerInfo.hints, &g_ServerInfo.info);
+	std::cout << "Getting address info . . . ";
 	if (result != 0) {
 		std::cout << "\nFetching address info exit with code " << result << "." << std::endl;
 		WSACleanup();
 		return 1;
 	}
+	else {
+		printf("Success!\n");
+	}
+
+	std::cout << "Creating socket . . . ";
+	g_ServerInfo.authSock = socket(g_ServerInfo.info->ai_family, g_ServerInfo.info->ai_socktype, g_ServerInfo.info->ai_protocol);
+	if (g_ServerInfo.authSock == INVALID_SOCKET) {
+		std::cout << "\nExit with code " << WSAGetLastError() << "." << std::endl;
+		freeaddrinfo(g_ServerInfo.info);
+		WSACleanup();
+		return 1;
+	}
+	else {
+		printf("Success!\n");
+	}
+
+	std::cout << "Connecting to the authentication server . . . ";
+	result = connect(g_ServerInfo.authSock, g_ServerInfo.info->ai_addr, g_ServerInfo.info->ai_addrlen);
+	if (result == SOCKET_ERROR) {
+		std::cout << "\nExit with code " << WSAGetLastError() << "." << std::endl;
+		freeaddrinfo(g_ServerInfo.info);
+		closesocket(g_ServerInfo.authSock);
+		WSACleanup();
+		return 1;
+	}
+	else {
+		printf("Success!\n");
+		printf("Connected to authentication server!\n");
+	}
+
+	DWORD NonBlock = 1;
+	result = ioctlsocket(g_ServerInfo.authSock, FIONBIO, &NonBlock);
+	if (result == SOCKET_ERROR) {
+		std::cout << "\nExit with code " << WSAGetLastError() << "." << std::endl;
+		freeaddrinfo(g_ServerInfo.info);
+		closesocket(g_ServerInfo.authSock);
+		WSACleanup();
+		return 1;
+	}
+
+	std::cout << "\n";
+
+	result = getaddrinfo(LOCAL_HOST, DEFAULT_PORT, &g_ServerInfo.hints, &g_ServerInfo.info);
+	std::cout << "Getting address info . . . ";
+	if (result != 0) {
+		std::cout << "\nFetching address info exit with code " << result << "." << std::endl;
+		WSACleanup();
+		return 1;
+	}
+	else {
+		printf("Success!\n");
+	}
 	
-	std::cout << "Creating socket...\n";
+	std::cout << "Creating socket . . . ";
 	//g_ServerInfo.listenSock = socket(g_ServerInfo.info->ai_family, g_ServerInfo.info->ai_socktype, g_ServerInfo.info->ai_protocol);
 	g_ServerInfo.listenSock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 	if (g_ServerInfo.listenSock == INVALID_SOCKET) {
@@ -48,8 +104,11 @@ int SelectServer::Initialize() {
 		WSACleanup();
 		return 1;
 	}
+	else {
+		printf("Success!\n");
+	}
 
-	std::cout << "Binding socket...\n";
+	std::cout << "Binding socket . . . ";
 	result = bind(g_ServerInfo.listenSock, g_ServerInfo.info->ai_addr, g_ServerInfo.info->ai_addrlen);
 	if (result == SOCKET_ERROR) {
 		std::cout << "\nSocket bind exit with code " << WSAGetLastError() << "." << std::endl;
@@ -58,8 +117,11 @@ int SelectServer::Initialize() {
 		WSACleanup();
 		return 1;
 	}
+	else {
+		printf("Success!\n");
+	}
 
-	std::cout << "Listening on socket...\n";
+	std::cout << "Listening on socket . . . ";
 	result = listen(g_ServerInfo.listenSock, SOMAXCONN);
 	if (result == SOCKET_ERROR) {
 		std::cout << "\nListening on socket exit with code " << WSAGetLastError() << "." << std::endl;
@@ -67,7 +129,11 @@ int SelectServer::Initialize() {
 		closesocket(g_ServerInfo.listenSock);
 		WSACleanup();
 		return 1;
-	}	
+	}
+	else {
+		printf("Success!\n");
+	}
+
 	return 0;
 }
 
@@ -78,8 +144,16 @@ int SelectServer::I_O() {
 	t_val.tv_sec = 0;
 	t_val.tv_usec = 500 * 1000;
 
+	std::string yes;
+	yes = "ass";
+
+	int result = send(g_ServerInfo.authSock, yes.c_str(), yes.size(), 0);
+	if (result == SOCKET_ERROR) {
+		std::cout << "Could not send buffer." << std::endl;
+	}
+
 	bool executing = true;
-	std::cout << "Calling select...\n";
+	std::cout << "Calling select . . . \n";
 	
 	while (executing) {
 		
@@ -101,7 +175,7 @@ int SelectServer::I_O() {
 
 		std::cout << ".";
 
-		//Inbound connection
+		// Inbound connection
 		if (FD_ISSET(g_ServerInfo.listenSock, &g_ServerInfo.socksReadyForReading)) {
 			
 			SOCKET clientSocket = accept(g_ServerInfo.listenSock, nullptr, nullptr);
@@ -116,7 +190,7 @@ int SelectServer::I_O() {
 				
 				std::string welMessage = "Welcome to the chat server!";
 
-				//Serialize the welcome message too!
+				// Serialize the welcome message too!
 				Buffer buffer(welMessage.length());
 				welMessage = buffer.WriteString(welMessage, 0);
 
@@ -126,7 +200,7 @@ int SelectServer::I_O() {
 			}
 		}
 
-		//Inbound message
+		// Inbound message
 		for (int i = 0; i < g_ServerInfo.clients.size(); i++) {
 			
 			ClientInfo client = g_ServerInfo.clients[i];
@@ -140,13 +214,13 @@ int SelectServer::I_O() {
 				char buf[buflen];
 				ZeroMemory(buf, buflen);
 
-				//Receive buffer
+				// Receive buffer
 				int bytesReceived = recv(client.cSock, buf, buflen, 0);
 				
-				//Buffer before being deserialized.
-				//std::cout << "\n" << buf;
+				// Buffer before being deserialized.
+				std::cout << "\n" << buf;
 				
-				//Client gets disconnected if no bytes are received from it
+				// Client gets disconnected if no bytes are received from it
 				if (bytesReceived <= 0) {
 					client.connected = false;
 					closesocket(client.cSock);
@@ -155,7 +229,7 @@ int SelectServer::I_O() {
 					break;
 				}
 
-				//Send message to all clients except the one it came from
+				// Send message to all clients except the one it came from
 				else {
 					for (int i = 0; i < g_ServerInfo.clients.size(); i++) {
 				

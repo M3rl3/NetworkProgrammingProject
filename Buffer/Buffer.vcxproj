@@ -131,6 +131,8 @@
     <ClCompile Include="Main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\AuthServer\auth.pb.h" />
+    <ClInclude Include="..\AuthServer\AuthServer.h" />
     <ClInclude Include="Buffer.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

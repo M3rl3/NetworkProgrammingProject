@@ -34,4 +34,7 @@ public:
 	int I_O();
 	std::string Time();
 	void ShutDown();
+
+	bool Login(std::string email, std::string password);
+	bool Register(std::string email, std::string password);
 };

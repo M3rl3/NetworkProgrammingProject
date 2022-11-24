@@ -13,6 +13,9 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Header Files\Header Files">
+      <UniqueIdentifier>{f8be48bc-fac7-4d42-891f-ee553aa8dff8}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Buffer.cpp">
@@ -25,6 +28,12 @@
   <ItemGroup>
     <ClInclude Include="Buffer.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\AuthServer\auth.pb.h">
+      <Filter>Header Files\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\AuthServer\AuthServer.h">
+      <Filter>Header Files\Header Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

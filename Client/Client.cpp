@@ -1,5 +1,9 @@
 #include "Client.h"
 
+#include "../MessageType.h"
+//#include "auth.pb.h"
+//#include "registration.pb.h"
+
 struct Header {
 	uint32_t packetLength;
 	uint32_t messageLength;
@@ -109,15 +113,52 @@ int Client::Initialize() {
 }
 
 int Client::I_O() {
+	MessageType message_type;
+
+yes:
+	std::cout << "Create a new accout/Log in: " << std::endl;
+	std::cout << "1. Create a new account" << std::endl;
+	std::cout << "2. Log In" << std::endl;
+	std::cout << "\n> ";
+
+	int input_type;
+
+	
+	std::cin >> input_type;
+	
+	if (input_type == 1) {
+		message_type = REGISTER;
+	}
+	else if (input_type == 2) {
+		message_type = LOGIN;
+	}
+	else {
+		std::cout << "\nInvalid Input" << std::endl;
+		goto yes;
+	}
+
+	std::string email;
+	std::string password;
+
+	switch (message_type)
+	{
+	case LOGIN:
+		Login(email, password);
+		break;
+	case REGISTER:
+		Register(email, password);
+		break;
+	default:
+		std::cout << "Whoops, something went wrong.";
+		return;
+		break;
+	}
+
+	message_type = SEND_MESSAGE;
 
 	const int buflen = 256;
 	char buf[buflen];
-
-	std::string uName;
 	
-	std::cout << "\nEnter username: ";
-	getline(std::cin, uName);
-
 	bool dataSent = true;
 
 	std::cout << "Sending message to server...\n";
@@ -133,7 +174,7 @@ int Client::I_O() {
 
 				if (key == 13) {
 					std::ostringstream ss;
-					ss << uName << " : " << input;
+					ss << email << " : " << input;
 					std::string message = ss.str();
 					
 					Buffer buffer;
@@ -186,4 +227,76 @@ void Client::ShutDown() {
 	freeaddrinfo(g_ClientInfo.info);
 	closesocket(g_ClientInfo.sock);
 	WSACleanup();
+}
+
+bool Client::Login(std::string email, std::string password) {
+	std::cout << "\nEnter email address: ";
+	getline(std::cin, email);
+
+	std::cout << "\nEnter password: ";
+	getline(std::cin, password);
+	bool infoExists = false;
+
+	auth::AuthenticateWeb login;
+	login.set_requestid(0);
+	login.set_email(email);
+	login.set_plaintextpassword(password);
+
+	std::string serializedLoginInfo;
+	login.SerializeToString(&serializedLoginInfo);
+	
+	Buffer buffer;
+	email = buffer.WriteString(email, 0);
+	password = buffer.WriteString(password, 0);
+
+	int result;
+
+	send(g_ClientInfo.sock, email.c_str(), email.size(), 0);
+	send(g_ClientInfo.sock, password.c_str(), password.size(), 0);
+
+	email = buffer.ReadString(email);
+	if (infoExists) {
+		std::cout << "Login successful" << std::endl;
+		std::cout << "Welcome " << email << std::endl;
+	}
+	else {
+		std::cout << "Login Failed." << std::endl;
+	}
+
+}
+
+bool Client::Register(std::string email, std::string password) {
+	std::cout << "\nEmail: ";
+	getline(std::cin, email);
+
+	std::cout << "\nPassword: ";
+	getline(std::cin, password);
+
+	
+	auth::CreateAccountWeb account;
+	account.set_requestid(0);
+	account.set_email(email);
+	account.set_plaintextpassword(password);
+
+	std::string serializedAccountInfo;
+	account.SerializeToString(&serializedAccountInfo);
+
+	Buffer buffer;
+	email = buffer.WriteString(email, 0);
+	password = buffer.WriteString(password, 0);
+
+	int result;
+
+	send(g_ClientInfo.sock, email.c_str(), email.size(), 0);
+	send(g_ClientInfo.sock, password.c_str(), password.size(), 0);
+
+	bool success = false;
+
+	if (success) {
+		std::cout << "Registeration successful" << std::endl;
+		std::cout << "Welcome " << email << std::endl;
+	}
+	else {
+		std::cout << "Registeration Failed." << std::endl;
+	}
 }

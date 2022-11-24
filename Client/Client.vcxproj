@@ -19,10 +19,12 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="auth.pb.cc" />
     <ClCompile Include="Client.cpp" />
     <ClCompile Include="ClientMain.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="auth.pb.h" />
     <ClInclude Include="Client.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
@@ -78,10 +80,12 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)Buffer;</IncludePath>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)Buffer;$(SolutionDir)include;</IncludePath>
+    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(SolutionDir)lib/$(Platform)/$(Configuration);$(SolutionDir)lib64/vs14;</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)Buffer;</IncludePath>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)Buffer;$(SolutionDir)include;</IncludePath>
+    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(SolutionDir)lib/$(Platform)/$(Configuration);$(SolutionDir)lib64/vs14;</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -121,7 +125,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>$(CoreLibraryDependencies);%(AdditionalDependencies);$(SolutionDir)Buffer/x64/$(Configuration)/Buffer.obj;</AdditionalDependencies>
+      <AdditionalDependencies>libprotobuf.lib;$(CoreLibraryDependencies);%(AdditionalDependencies);$(SolutionDir)Buffer/x64/$(Configuration)/Buffer.obj;</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -138,7 +142,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>$(CoreLibraryDependencies);%(AdditionalDependencies);$(SolutionDir)Buffer/x64/$(Configuration)/Buffer.obj;</AdditionalDependencies>
+      <AdditionalDependencies>libprotobuf.lib;$(CoreLibraryDependencies);%(AdditionalDependencies);$(SolutionDir)Buffer/x64/$(Configuration)/Buffer.obj;</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
