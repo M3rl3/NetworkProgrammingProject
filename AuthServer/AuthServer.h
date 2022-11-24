@@ -1,6 +1,4 @@
 #pragma once
-
-#pragma once
 #define WIN32_LEAN_AND_MEAN
 
 #include <Windows.h>
@@ -14,13 +12,20 @@
 #include <vector>
 #include <chrono>
 
+#include "jdbc/mysql_driver.h"
+#include "jdbc/mysql_connection.h"
+#include "jdbc/mysql_error.h"
+#include "jdbc/cppconn/statement.h"
+#include "jdbc/cppconn/prepared_statement.h"
+#include "jdbc/cppconn/resultset.h"
+
 #include "../Buffer/Buffer.h"
 
 #pragma comment(lib, "Ws2_32.lib")
 #pragma warning(disable : 4996)
 
 #define LOCAL_HOST "127.0.0.1"
-#define DEFAULT_PORT "3306"
+#define DEFAULT_PORT "8888"
 
 class AuthServer {
 public:
@@ -48,4 +53,16 @@ public:
 	int Initialize();
 	int I_O();
 	void ShutDown();
+
+	bool SQLConnect();
+	bool UpdateTable(const char* email, const char* salt, const char* hashed_password, int userID);
+	void DisplayData();
+	void SQLDisconnect();
+
+private:
+	sql::Driver* sqlDriver;
+	sql::Connection* con;
+	sql::ResultSet* resultSet;
+	sql::Statement* statement;
+	sql::PreparedStatement* insertStatement;
 };

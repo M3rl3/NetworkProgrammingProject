@@ -85,7 +85,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)Buffer;$(SolutionDir)include;</IncludePath>
-    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(SolutionDir)lib/$(Platform)/$(Configuration);$(SolutionDir)lib64/vs14;</LibraryPath>
+    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(SolutionDir)lib/x64/$(Configuration);$(SolutionDir)lib64/vs14;</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -125,7 +125,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>libprotobuf.lib;$(CoreLibraryDependencies);%(AdditionalDependencies);$(SolutionDir)Buffer/x64/$(Configuration)/Buffer.obj;</AdditionalDependencies>
+      <AdditionalDependencies>libprotobufd.lib;$(CoreLibraryDependencies);%(AdditionalDependencies);$(SolutionDir)Buffer/x64/$(Configuration)/Buffer.obj;</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">

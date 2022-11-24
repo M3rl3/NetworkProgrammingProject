@@ -19,11 +19,12 @@
 
 #define LOCAL_HOST "127.0.0.1"
 #define DEFAULT_PORT "54673"
-#define AUTH_PORT "3306"
+#define AUTH_PORT "8888"
 
 class SelectServer {
 	
 	struct ClientInfo {
+		Buffer buffer;
 		SOCKET cSock;
 		std::string name;
 		bool connected;
@@ -56,6 +57,7 @@ public:
 	std::string Time();
 	int Initialize();
 	int I_O();
-	std::string HostName();
 	void ShutDown();
+
+	int Receive(ClientInfo& client, const int buflen, char* buf);
 };

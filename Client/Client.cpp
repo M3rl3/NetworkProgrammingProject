@@ -1,20 +1,16 @@
 #include "Client.h"
 
 #include "../MessageType.h"
-//#include "auth.pb.h"
-//#include "registration.pb.h"
+#include "auth.pb.h"
 
 struct Header {
 	uint32_t packetLength;
-	uint32_t messageLength;
-	uint32_t roomNameLength;
-	uint32_t usrNameLength;
+	uint32_t messageType;
+	uint32_t usrDataLength;
 };
 
 struct Content {
-	std::string roomName;
-	std::string message;
-	std::string usrName;
+	std::string usrData;
 };
 
 struct Packet {
@@ -22,32 +18,26 @@ struct Packet {
 	Content content;
 };
 
-std::vector<uint8_t> CreatePacket(std::string usrName, std::string roomName, std::string message) {
+std::vector<uint8_t> CreatePacket(int messageType, std::string serializedUsrData, std::string message) {
 	Packet pkt;
-	pkt.content.roomName = roomName;
-	pkt.content.message = message;
-	pkt.content.usrName = usrName;
 
-	pkt.header.roomNameLength = sizeof(pkt.content.roomName);
-	pkt.header.messageLength = sizeof(pkt.content.message);
-	pkt.header.usrNameLength = sizeof(pkt.content.usrName);
+	pkt.header.messageType = messageType;
 
-	pkt.header.packetLength = 
-		sizeof(pkt.header.roomNameLength) + sizeof(pkt.header.messageLength) +
-		sizeof(pkt.header.usrNameLength) + pkt.header.roomNameLength + 
-		pkt.header.messageLength + pkt.header.usrNameLength;
+	pkt.content.usrData = serializedUsrData;
 
-	Buffer buffer;
+	pkt.header.usrDataLength = pkt.content.usrData.size();
+
+	pkt.header.packetLength =
+		sizeof(Header) +
+		sizeof(pkt.content.usrData.size()) + pkt.content.usrData.size();
+
+	Buffer buffer(128);
 
 	buffer.WriteUInt32LE(pkt.header.packetLength);
-	buffer.WriteUInt32LE(pkt.header.usrNameLength);
-	buffer.WriteUInt32LE(pkt.header.roomNameLength);
-	buffer.WriteUInt32LE(pkt.header.messageLength);
-
-	buffer.WriteString(pkt.content.usrName);
-	buffer.WriteString(pkt.content.roomName);
-	buffer.WriteString(pkt.content.message);
-
+	buffer.WriteUInt32LE(pkt.header.messageType);
+	buffer.WriteUInt32LE(pkt.content.usrData.size());
+	// buffer.WriteString(pkt.content.usrData);
+	buffer.m_Buffer.insert(buffer.m_Buffer.end(), pkt.content.usrData.begin(), pkt.content.usrData.end());
 	return buffer.m_Buffer;
 }
 
@@ -122,7 +112,6 @@ yes:
 	std::cout << "\n> ";
 
 	int input_type;
-
 	
 	std::cin >> input_type;
 	
@@ -140,17 +129,35 @@ yes:
 	std::string email;
 	std::string password;
 
+	std::cout << "\nEmail: ";
+	std::cin >> email;
+
+	std::cout << "\nPassword: ";
+	std::cin >> password;
+
 	switch (message_type)
 	{
-	case LOGIN:
-		Login(email, password);
-		break;
 	case REGISTER:
-		Register(email, password);
+		if (Register(email, password)) {
+			std::cout << "Registeration successful" << std::endl;
+			std::cout << "Welcome " << email << std::endl;
+		}
+		else {
+			std::cout << "Registeration Failed." << std::endl;
+		}
+		break;
+	case LOGIN:
+		if (Login(email, password)) {
+			std::cout << "Login successful" << std::endl;
+			std::cout << "Welcome " << email << std::endl;
+		}
+		else {
+			std::cout << "Login Failed." << std::endl;
+		}
 		break;
 	default:
 		std::cout << "Whoops, something went wrong.";
-		return;
+		return 1;
 		break;
 	}
 
@@ -230,12 +237,6 @@ void Client::ShutDown() {
 }
 
 bool Client::Login(std::string email, std::string password) {
-	std::cout << "\nEnter email address: ";
-	getline(std::cin, email);
-
-	std::cout << "\nEnter password: ";
-	getline(std::cin, password);
-	bool infoExists = false;
 
 	auth::AuthenticateWeb login;
 	login.set_requestid(0);
@@ -245,33 +246,22 @@ bool Client::Login(std::string email, std::string password) {
 	std::string serializedLoginInfo;
 	login.SerializeToString(&serializedLoginInfo);
 	
-	Buffer buffer;
-	email = buffer.WriteString(email, 0);
-	password = buffer.WriteString(password, 0);
+	//std::cout << serializedLoginInfo;
+	std::vector<uint8_t> packet;
+	packet = CreatePacket(1, serializedLoginInfo, nullptr);
 
-	int result;
-
-	send(g_ClientInfo.sock, email.c_str(), email.size(), 0);
-	send(g_ClientInfo.sock, password.c_str(), password.size(), 0);
-
-	email = buffer.ReadString(email);
-	if (infoExists) {
-		std::cout << "Login successful" << std::endl;
-		std::cout << "Welcome " << email << std::endl;
+	int sendResult;
+	
+	sendResult = send(g_ClientInfo.sock, serializedLoginInfo.c_str(), serializedLoginInfo.size() + 1, 0);
+	if (sendResult == SOCKET_ERROR) {
+		std::cout << "Could not send login info over socket." << std::endl;
+		return false;
 	}
-	else {
-		std::cout << "Login Failed." << std::endl;
-	}
-
+	
+	return true;
 }
 
 bool Client::Register(std::string email, std::string password) {
-	std::cout << "\nEmail: ";
-	getline(std::cin, email);
-
-	std::cout << "\nPassword: ";
-	getline(std::cin, password);
-
 	
 	auth::CreateAccountWeb account;
 	account.set_requestid(0);
@@ -281,22 +271,39 @@ bool Client::Register(std::string email, std::string password) {
 	std::string serializedAccountInfo;
 	account.SerializeToString(&serializedAccountInfo);
 
-	Buffer buffer;
-	email = buffer.WriteString(email, 0);
-	password = buffer.WriteString(password, 0);
+	//std::vector<uint8_t> packet;
+	//packet = CreatePacket(1, serializedAccountInfo, nullptr);
+	Packet pkt;
 
-	int result;
+	pkt.header.messageType = 4;
 
-	send(g_ClientInfo.sock, email.c_str(), email.size(), 0);
-	send(g_ClientInfo.sock, password.c_str(), password.size(), 0);
+	pkt.content.usrData = serializedAccountInfo;
 
-	bool success = false;
+	pkt.header.usrDataLength = pkt.content.usrData.size();
 
-	if (success) {
-		std::cout << "Registeration successful" << std::endl;
-		std::cout << "Welcome " << email << std::endl;
+	pkt.header.packetLength =
+		sizeof(Header) +
+		sizeof(pkt.content.usrData.size()) + pkt.content.usrData.size();
+
+	Buffer buffer(50);
+
+	buffer.WriteUInt32LE(pkt.header.packetLength);
+	buffer.WriteUInt32LE(pkt.header.messageType);
+	buffer.WriteUInt32LE(pkt.content.usrData.size());
+	// buffer.WriteString(pkt.content.usrData);
+	buffer.m_Buffer.insert(buffer.m_Buffer.end(), pkt.content.usrData.begin(), pkt.content.usrData.end());
+
+	std::cout << "hello " << serializedAccountInfo;
+	int sendResult;
+	sendResult = send(g_ClientInfo.sock,(const char *)buffer.m_Buffer.data(), buffer.m_Buffer.size(), 0);
+	if (sendResult == SOCKET_ERROR) {
+		std::cout << "Could not send registeration info over socket." << std::endl;
+		return false;
 	}
-	else {
-		std::cout << "Registeration Failed." << std::endl;
+
+	if (account.ParseFromString(serializedAccountInfo)) {
+		std::cout << "\n Theres your string" << serializedAccountInfo << std::endl;
 	}
+	return true;
+	
 }

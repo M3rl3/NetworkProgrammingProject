@@ -37,4 +37,6 @@ public:
 
 	bool Login(std::string email, std::string password);
 	bool Register(std::string email, std::string password);
+
+	int Receive(ClientInfo& client, const int buflen, char* buf);
 };

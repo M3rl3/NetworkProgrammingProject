@@ -9,11 +9,18 @@ AuthServer::~AuthServer() {
 }
 
 int AuthServer::Initialize() {
+
+	if (SQLConnect() == false) {
+		std::cout << "Unable to connect to SQL server." << std::endl;
+		return 1;
+	}
+	//DisplayData();
+
 	// Initialization 
 	WSADATA wsaData;
 	int result;
 
-	printf("WSAStartup . . . ");
+	printf("\nWSAStartup . . . ");
 	result = WSAStartup(MAKEWORD(2, 2), &wsaData);
 	if (result != 0) {
 		printf("WSAStartup failed with error %d\n", result);
@@ -84,6 +91,10 @@ int AuthServer::Initialize() {
 
 int AuthServer::I_O() {
 
+	/*if (UpdateTable("mail@mail.com", "whatever", "securepassword", 3)) {
+		std::cout << "Successfully updated table contents" << std::endl;
+	}*/
+
 	struct timeval t_val;
 	t_val.tv_sec = 0;
 	t_val.tv_usec = 500 * 1000;
@@ -140,13 +151,18 @@ int AuthServer::I_O() {
 			if (recvResult == 0) {
 				printf("Chat Server disconnected.\n");
 				g_AuthInfo.chatServer.connected = false;
+				FD_ZERO(g_AuthInfo.chatServer.socket);
 				continue;
 			}
-			printf("Message From the chat server:\n%s\n", buf);
+			// printf("Message From the chat server:\n%s\n", buf);
+
+			send(g_AuthInfo.chatServer.socket, buf, buflen, 0);
+			recvResult = 0;
+			ZeroMemory(buf, buflen);
+			// FD_ZERO(g_AuthInfo.chatServer.socket);
 		}	
 	}
 }
-
 
 void AuthServer::ShutDown() {
 	// Close
@@ -155,4 +171,115 @@ void AuthServer::ShutDown() {
 	closesocket(g_AuthInfo.listenSock);
 	closesocket(g_AuthInfo.chatServer.socket);
 	WSACleanup();
+	SQLDisconnect();
+}
+
+bool AuthServer::SQLConnect() {
+	printf("Retrieving ccp-conn-sql driver . . . ");
+	try {
+		sqlDriver = sql::mysql::get_driver_instance();
+	}
+	catch (sql::SQLException e) {
+		printf("Failed to get_driver_instance: %s\n", e.what());
+		return false;
+	}
+	printf("Success!\n");
+
+	printf("Connecting to database . . . ");
+	try {
+		sql::SQLString hostName("127.0.0.1:3306");
+		sql::SQLString userName("root");
+		sql::SQLString password("1598753");
+		con = sqlDriver->connect(hostName, userName, password);
+		con->setSchema("yes");
+	}
+	catch (sql::SQLException e) {
+		printf("Failed to connect to database: %s\n", e.what());
+		return false;
+	}
+	printf("Success!\n");
+
+	printf("Executing query statement . . . ");
+	try {
+		statement = con->createStatement();
+		insertStatement = con->prepareStatement(
+			"INSERT INTO web_auth (email, salt, hashed_password, userID) VALUES (?, ?, ?, ?);");
+	}
+	catch (sql::SQLException e) {
+		printf("Failed to create statements: %s\n", e.what());
+		return false;
+	}
+	printf("Success!\n");
+
+	return true;
+}
+
+bool AuthServer::UpdateTable(const char* email, const char* salt, const char* hashed_password, int userID) {
+	insertStatement->setString(1, email);
+	insertStatement->setString(2, salt);
+	insertStatement->setString(3, hashed_password);
+	insertStatement->setInt(4, userID);
+
+	try {
+		insertStatement->execute();
+	}
+	catch (sql::SQLException e) {
+		printf("Failed to add user to the database table 'web_auth': %s\n", e.what());
+		return false;
+	}
+
+	insertStatement = con->prepareStatement(
+		"INSERT INTO user (creation_date, last_login, userID) VALUES (now(), now(), ?);");
+
+	
+	insertStatement->setInt(1, userID);
+
+	try {
+		insertStatement->execute();
+	}
+	catch (sql::SQLException e) {
+		printf("Failed to add user to the database table 'user': %s\n", e.what());
+		return false;
+	}
+	printf("Successfully added a user to database tables!\n");
+	return true;
+}
+
+void AuthServer::DisplayData() {
+	printf("Reading table data . . . ");
+	try {
+		resultSet = statement->executeQuery("SELECT * FROM web_auth;");
+	}
+	catch (sql::SQLException e) {
+		printf("Failed to query our database: %s\n", e.what());
+		return;
+	}
+	printf("Success!\n");
+	printf("Retrieved % d rows from the database", (int)resultSet->rowsCount());
+	printf("\n");
+
+	while (resultSet->next()) {
+		int id = resultSet->getInt("id");
+		sql::SQLString email = resultSet->getString("email");
+		sql::SQLString salt = resultSet->getString("salt");
+		sql::SQLString hashed_password = resultSet->getString("hashed_password");
+		int userID = resultSet->getInt("userID");
+
+		std::cout << id << " " << email << " " << salt << " " << userID << std::endl;
+	}
+}
+
+void AuthServer::SQLDisconnect() {
+	try {
+		con->close();
+	}
+	catch (sql::SQLException e) {
+		printf("Failed to close the connection to our database: %s\n", e.what());
+		return;
+	}
+	printf("Successfully closed the connection to our Database!\n");
+
+	delete statement;
+	delete resultSet;
+	delete insertStatement;
 }
