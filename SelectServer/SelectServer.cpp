@@ -171,20 +171,6 @@ int SelectServer::I_O() {
 
 		std::cout << ".";
 
-		/*if (FD_ISSET(g_ServerInfo.authSock, &g_ServerInfo.socksReadyForReading)) {
-			std::string yes;
-			yes = "yes";
-			int result = send(g_ServerInfo.authSock, yes.c_str(), yes.size(), 0);
-			if (result == SOCKET_ERROR) {
-				std::cout << "Could not send buffer." << std::endl;
-			}
-			const int buflen = 256;
-			char buf[buflen];
-			ZeroMemory(buf, buflen);
-			int recvResult = recv(g_ServerInfo.authSock, buf, buflen, 0);
-			std::cout << "Message from auth server" << buf << std::endl;
-		}*/
-
 		// Inbound connection
 		if (FD_ISSET(g_ServerInfo.listenSock, &g_ServerInfo.socksReadyForReading)) {
 			
@@ -225,32 +211,10 @@ int SelectServer::I_O() {
 				char buf[buflen];
 				//ZeroMemory(buf, buflen);
 
-				// Receive buffer
-				//Buffer buf1 = Buffer(128);
-				//int bytesReceived = recv(client.cSock,(char*)&(buf1.m_Buffer[0]), buflen, 0);
 				int bytesReceived = Receive(client, buflen, buf);
 				// Buffer before being deserialized.
 				std::cout << "\n" << buf;
 
-				//uint32_t temp = 0;
-				//uint32_t packetLen = buf1.ReadUInt32LE(temp);
-
-				//std::vector<uint8_t> hello;
-
-				////buf1.m_Buffer(128);
-				// std::string data = buf;
-
-				/*auth::CreateAccountWeb account;
-				if (account.ParseFromString(data) == false) {
-					std::cout << "Could not parse buffer " << data.length() <<  std::endl;
-				}*/
-
-				/*auth::AuthenticateWeb login;
-				login.ParseFromString(data);*/
-
-				// Buffer after being deserialized.
-				
-				
 				// Client gets disconnected if no bytes are received from it
 				if (bytesReceived <= 0) {
 					client.connected = false;
@@ -305,29 +269,65 @@ int SelectServer::Receive(ClientInfo& client, const int buflen, char* buf) {
 	}
 	else if(bytesReceived > 0) {
 		if (client.buffer.m_Buffer.size() >= 4) {
-			auth::CreateAccountWeb desUser;
+			
 			unsigned int temp = 0;
-			unsigned int packageLength = client.buffer.ReadUInt32LE(temp);
+			unsigned int packetLength = client.buffer.ReadUInt32LE(temp);
 			temp = 4;
 			unsigned int messageId = client.buffer.ReadUInt32LE(temp);
-			/*temp = 8;
-			unsigned int messageLength = client.buffer.ReadUInt32LE(temp);
-			std::string serializedUser(client.buffer.m_Buffer.begin() + 12,
-				client.buffer.m_Buffer.begin() + messageLength + 12);*/
-
 			temp = 8;
 			unsigned int usrDataSize = client.buffer.ReadUInt32LE(temp);
-			temp = 8;
-			std::string serializedUser(client.buffer.m_Buffer.begin() + 16,
-				client.buffer.m_Buffer.begin() + usrDataSize + 16);
+			temp = 12;
+			std::string serializedUser(client.buffer.m_Buffer.begin() + 12,
+				client.buffer.m_Buffer.begin() + usrDataSize + 12);
 			bool result = false;
-			result = desUser.ParseFromString(serializedUser);
-			if (result == false) {
-				printf(" Failed to deserialize user.\n");
+
+			printf("\n PacketLength: %d \n", packetLength);
+			printf(" messageID: %d \n", messageId);
+			// New account
+			if (messageId == 1) {
+				auth::CreateAccountWeb desUser;
+				result = desUser.ParseFromString(serializedUser);
+				if (result == false) {
+					printf(" Failed to deserialize user.\n");
+				}
+				std::cout << "\nLast registeration:";
+				std::cout << "\nemail: " << desUser.email() << " \npassword: " << desUser.plaintextpassword() << " \nid: " << desUser.requestid() << std::endl;
+				std::string email = desUser.email();
+				std::string pass = desUser.plaintextpassword();
+				std::stringstream ss;
+				ss >> messageId >> email >> pass;
+
+				int sendResult = 
+				send(g_ServerInfo.authSock, ss.str().c_str(), ss.str().size(), 0);
+
+				if (sendResult == INVALID_SOCKET) {
+					std::cout << " Could not send buffer to auth server" << std::endl;
+				}
 			}
-			printf(" Testing %d \n", packageLength);
-			printf(" Testing %d \n", messageId);
-			std::cout << serializedUser;
+			// Login
+			else if (messageId == 0) {
+				auth::AuthenticateWeb desUser;
+				result = desUser.ParseFromString(serializedUser);
+				if (result == false) {
+					printf(" Failed to deserialize user.\n");
+				}
+				std::cout << "\nLast sign in: ";
+				std::cout << "\nemail: " << desUser.email() << " \npassword: " << desUser.plaintextpassword() << " \nid: " << desUser.requestid() << std::endl;
+				std::string email = desUser.email();
+				std::string pass = desUser.plaintextpassword();
+
+				std::stringstream ss;
+				ss >> messageId >> email >> pass;
+				int sendResult =
+				send(g_ServerInfo.authSock, ss.str().c_str(), ss.str().size(), 0);
+
+				if (sendResult == INVALID_SOCKET) {
+					std::cout << " Could not send buffer to auth server" << std::endl;
+				}
+			}
+			else {
+				printf(" Invalid Message ID.\n");
+			}
 		}
 	}
 	return bytesReceived;

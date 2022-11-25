@@ -2,8 +2,7 @@
 
 #include <iostream>
 
-Buffer::Buffer() {
-
+Buffer::Buffer() : Buffer(0) {
 }
 
 Buffer::Buffer(size_t size) : m_WriteIndex(0), m_ReadIndex(0) {

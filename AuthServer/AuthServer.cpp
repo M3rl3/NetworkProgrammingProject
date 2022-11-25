@@ -14,7 +14,7 @@ int AuthServer::Initialize() {
 		std::cout << "Unable to connect to SQL server." << std::endl;
 		return 1;
 	}
-	//DisplayData();
+	DisplayData();
 
 	// Initialization 
 	WSADATA wsaData;
@@ -91,9 +91,9 @@ int AuthServer::Initialize() {
 
 int AuthServer::I_O() {
 
-	/*if (UpdateTable("mail@mail.com", "whatever", "securepassword", 3)) {
+	if (UpdateTable("rameez@mail.com", "whatever", "securepassword", 3)) {
 		std::cout << "Successfully updated table contents" << std::endl;
-	}*/
+	}
 
 	struct timeval t_val;
 	t_val.tv_sec = 0;
@@ -141,12 +141,10 @@ int AuthServer::I_O() {
 				printf("\nEstablished connection to chat server!\n");
 			}
 		}
+		const int buflen = 256;
+		char buf[buflen];
 
 		if (FD_ISSET(g_AuthInfo.chatServer.socket, &g_AuthInfo.socksReadyForReading)) {
-
-			const int buflen = 128;
-			char buf[buflen];
-
 			int recvResult = recv(g_AuthInfo.chatServer.socket, buf, buflen, 0);
 			if (recvResult == 0) {
 				printf("Chat Server disconnected.\n");
@@ -154,12 +152,6 @@ int AuthServer::I_O() {
 				FD_ZERO(g_AuthInfo.chatServer.socket);
 				continue;
 			}
-			// printf("Message From the chat server:\n%s\n", buf);
-
-			send(g_AuthInfo.chatServer.socket, buf, buflen, 0);
-			recvResult = 0;
-			ZeroMemory(buf, buflen);
-			// FD_ZERO(g_AuthInfo.chatServer.socket);
 		}	
 	}
 }
@@ -167,11 +159,11 @@ int AuthServer::I_O() {
 void AuthServer::ShutDown() {
 	// Close
 	printf("Closing . . . \n");
-	freeaddrinfo(g_AuthInfo.info);
 	closesocket(g_AuthInfo.listenSock);
 	closesocket(g_AuthInfo.chatServer.socket);
 	WSACleanup();
 	SQLDisconnect();
+	printf("Success!\n");
 }
 
 bool AuthServer::SQLConnect() {
@@ -186,12 +178,14 @@ bool AuthServer::SQLConnect() {
 	printf("Success!\n");
 
 	printf("Connecting to database . . . ");
+
+	// SQL server settings
 	try {
 		sql::SQLString hostName("127.0.0.1:3306");
 		sql::SQLString userName("root");
-		sql::SQLString password("1598753");
+		sql::SQLString password("root");
 		con = sqlDriver->connect(hostName, userName, password);
-		con->setSchema("yes");
+		con->setSchema("schema");
 	}
 	catch (sql::SQLException e) {
 		printf("Failed to connect to database: %s\n", e.what());
@@ -200,6 +194,7 @@ bool AuthServer::SQLConnect() {
 	printf("Success!\n");
 
 	printf("Executing query statement . . . ");
+
 	try {
 		statement = con->createStatement();
 		insertStatement = con->prepareStatement(
@@ -228,6 +223,8 @@ bool AuthServer::UpdateTable(const char* email, const char* salt, const char* ha
 		return false;
 	}
 
+
+	// Automatically updates creation date and last login
 	insertStatement = con->prepareStatement(
 		"INSERT INTO user (creation_date, last_login, userID) VALUES (now(), now(), ?);");
 

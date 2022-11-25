@@ -36,7 +36,6 @@ std::vector<uint8_t> CreatePacket(int messageType, std::string serializedUsrData
 	buffer.WriteUInt32LE(pkt.header.packetLength);
 	buffer.WriteUInt32LE(pkt.header.messageType);
 	buffer.WriteUInt32LE(pkt.content.usrData.size());
-	// buffer.WriteString(pkt.content.usrData);
 	buffer.m_Buffer.insert(buffer.m_Buffer.end(), pkt.content.usrData.begin(), pkt.content.usrData.end());
 	return buffer.m_Buffer;
 }
@@ -246,18 +245,31 @@ bool Client::Login(std::string email, std::string password) {
 	std::string serializedLoginInfo;
 	login.SerializeToString(&serializedLoginInfo);
 	
-	//std::cout << serializedLoginInfo;
-	std::vector<uint8_t> packet;
-	packet = CreatePacket(1, serializedLoginInfo, nullptr);
+	Packet pkt;
+
+	pkt.header.messageType = 0;
+
+	pkt.content.usrData = serializedLoginInfo;
+
+	pkt.header.usrDataLength = pkt.content.usrData.size();
+
+	pkt.header.packetLength =
+		sizeof(Header) +
+		sizeof(pkt.content.usrData.size()) + pkt.content.usrData.size();
+
+	Buffer buffer = Buffer(12);
+
+	buffer.WriteUInt32LE(pkt.header.packetLength);
+	buffer.WriteUInt32LE(pkt.header.messageType);
+	buffer.WriteUInt32LE(pkt.content.usrData.size());
+	buffer.m_Buffer.insert(buffer.m_Buffer.end(), pkt.content.usrData.begin(), pkt.content.usrData.end());
 
 	int sendResult;
-	
-	sendResult = send(g_ClientInfo.sock, serializedLoginInfo.c_str(), serializedLoginInfo.size() + 1, 0);
+	sendResult = send(g_ClientInfo.sock, (const char*)buffer.m_Buffer.data(), buffer.m_Buffer.size(), 0);
 	if (sendResult == SOCKET_ERROR) {
 		std::cout << "Could not send login info over socket." << std::endl;
 		return false;
 	}
-	
 	return true;
 }
 
@@ -271,11 +283,9 @@ bool Client::Register(std::string email, std::string password) {
 	std::string serializedAccountInfo;
 	account.SerializeToString(&serializedAccountInfo);
 
-	//std::vector<uint8_t> packet;
-	//packet = CreatePacket(1, serializedAccountInfo, nullptr);
 	Packet pkt;
 
-	pkt.header.messageType = 4;
+	pkt.header.messageType = 1;
 
 	pkt.content.usrData = serializedAccountInfo;
 
@@ -285,7 +295,7 @@ bool Client::Register(std::string email, std::string password) {
 		sizeof(Header) +
 		sizeof(pkt.content.usrData.size()) + pkt.content.usrData.size();
 
-	Buffer buffer(50);
+	Buffer buffer = Buffer(12);
 
 	buffer.WriteUInt32LE(pkt.header.packetLength);
 	buffer.WriteUInt32LE(pkt.header.messageType);
@@ -293,17 +303,11 @@ bool Client::Register(std::string email, std::string password) {
 	// buffer.WriteString(pkt.content.usrData);
 	buffer.m_Buffer.insert(buffer.m_Buffer.end(), pkt.content.usrData.begin(), pkt.content.usrData.end());
 
-	std::cout << "hello " << serializedAccountInfo;
 	int sendResult;
 	sendResult = send(g_ClientInfo.sock,(const char *)buffer.m_Buffer.data(), buffer.m_Buffer.size(), 0);
 	if (sendResult == SOCKET_ERROR) {
 		std::cout << "Could not send registeration info over socket." << std::endl;
 		return false;
 	}
-
-	if (account.ParseFromString(serializedAccountInfo)) {
-		std::cout << "\n Theres your string" << serializedAccountInfo << std::endl;
-	}
 	return true;
-	
 }
